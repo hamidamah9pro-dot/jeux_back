@@ -27,13 +27,13 @@ if (!isInGame($game, $authorId) || !isInGame($game, $targetId)) {
 }
 
 Secret::updateOrCreate(
-    ['game_id' => $game->id, 'author_id' => $authorId],
+    ['game_id' => $game->id, 'round' => $game->round, 'author_id' => $authorId],
     ['target_id' => $targetId, 'content' => $content]
 );
 
 // Dès que tout le monde a soumis, on passe en phase d'enquête
 $totalPlayers = $game->users()->count();
-$totalSecrets = $game->secrets()->count();
+$totalSecrets = $game->secrets()->where('round', $game->round)->count();
 
 if ($totalSecrets >= $totalPlayers) {
     $game->status = 'playing';

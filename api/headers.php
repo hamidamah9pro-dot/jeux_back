@@ -1,11 +1,13 @@
 <?php
-// Mettre à false en production pour ne plus exposer le détail des erreurs.
-const APP_DEBUG = true;
+$localConfig = file_exists(__DIR__ . '/../config/local.php') ? require __DIR__ . '/../config/local.php' : [];
+// Détail des erreurs affiché seulement en local (ou si 'debug' => true dans config/local.php).
+define('APP_DEBUG', $localConfig['debug'] ?? ($_SERVER['SERVER_NAME'] ?? '') === 'localhost');
+$allowedOrigin = $localConfig['allowed_origin'] ?? '*';
 
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
-header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Origin: " . $allowedOrigin);
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 header("Content-Type: application/json; charset=UTF-8");
@@ -47,13 +49,18 @@ function avatarFor(string $username): string {
     return "https://api.dicebear.com/7.x/avataaars/svg?seed=" . urlencode($username . rand(1, 999));
 }
 
+/** Secrets de la manche en cours uniquement. */
+function roundSecrets(Game $game) {
+    return $game->secrets->filter(fn($s) => (int)$s->round === (int)$game->round)->values();
+}
+
 /**
  * Ordre de révélation : mélangé mais stable d'un appel à l'autre (même ordre pour tous les joueurs),
  * et indépendant de l'ordre dans lequel les joueurs ont soumis leur secret.
  */
 function orderedSecrets(Game $game) {
-    return $game->secrets
-        ->sortBy(fn($s) => crc32($game->room_code . '-' . $s->id))
+    return roundSecrets($game)
+        ->sortBy(fn($s) => crc32($game->room_code . '-' . $game->round . '-' . $s->id))
         ->values();
 }
 
@@ -62,6 +69,13 @@ function currentSecret(Game $game) {
         return null;
     }
     return orderedSecrets($game)->first(fn($s) => is_null($s->guessed_by));
+}
+
+function requireHost(Game $game, $userId): void {
+    $host = $game->users()->wherePivot('is_host', true)->first();
+    if (!$host || $host->id != $userId) {
+        sendResponse(['success' => false, 'message' => 'Seul l’hôte peut faire ça.'], 403);
+    }
 }
 
 function isInGame(Game $game, $userId): bool {

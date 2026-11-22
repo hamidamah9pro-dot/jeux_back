@@ -41,9 +41,10 @@ $secret->guessed_by = $guessedAuthorId;
 $secret->is_correct = $isCorrect;
 $secret->save();
 
-$remaining = $game->secrets()->whereNull('guessed_by')->count();
+// Manche terminée : on n'arrête pas la partie, l'hôte choisit de continuer ou de terminer.
+$remaining = $game->secrets()->where('round', $game->round)->whereNull('guessed_by')->count();
 if ($remaining === 0) {
-    $game->status = 'finished';
+    $game->status = 'round_over';
     $game->save();
 }
 

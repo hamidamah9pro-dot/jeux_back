@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS games (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   room_code CHAR(5) NOT NULL UNIQUE,
-  status ENUM('waiting','submitting','playing','finished') NOT NULL DEFAULT 'waiting'
+  status ENUM('waiting','submitting','playing','round_over','finished') NOT NULL DEFAULT 'waiting',
+  `round` INT UNSIGNED NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS game_users (
@@ -27,12 +28,13 @@ CREATE TABLE IF NOT EXISTS game_users (
 CREATE TABLE IF NOT EXISTS secrets (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   game_id INT UNSIGNED NOT NULL,
+  `round` INT UNSIGNED NOT NULL DEFAULT 1,
   author_id INT UNSIGNED NOT NULL,
   target_id INT UNSIGNED NOT NULL,
   content TEXT NOT NULL,
   guessed_by INT UNSIGNED NULL,
   is_correct TINYINT(1) NULL,
-  UNIQUE KEY uq_game_author (game_id, author_id),
+  UNIQUE KEY uq_game_round_author (game_id, `round`, author_id),
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
   FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (target_id) REFERENCES users(id) ON DELETE CASCADE
