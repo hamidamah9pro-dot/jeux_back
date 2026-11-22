@@ -1,7 +1,7 @@
 <?php
 $localConfig = file_exists(__DIR__ . '/../config/local.php') ? require __DIR__ . '/../config/local.php' : [];
 // Détail des erreurs affiché seulement en local (ou si 'debug' => true dans config/local.php).
-define('APP_DEBUG', $localConfig['debug'] ?? ($_SERVER['SERVER_NAME'] ?? '') === 'localhost');
+define('APP_DEBUG', true);
 $allowedOrigin = $localConfig['allowed_origin'] ?? '*';
 
 ini_set('display_errors', '0');
